@@ -1,0 +1,27 @@
+{
+    "type":  "minecraft:crafting_shaped",
+    "category":  "misc",
+    "pattern":  [
+                    "GGG",
+                    "QRQ",
+                    "III"
+                ],
+    "key":  {
+                "G":  {
+                          "item":  "minecraft:glass"
+                      },
+                "R":  {
+                          "item":  "minecraft:redstone"
+                      },
+                "Q":  {
+                          "item":  "minecraft:quartz"
+                      },
+                "I":  {
+                          "item":  "minecraft:iron_ingot"
+                      }
+            },
+    "result":  {
+                   "id":  "pixelreel:ultrawide_monitor",
+                   "count":  1
+               }
+}

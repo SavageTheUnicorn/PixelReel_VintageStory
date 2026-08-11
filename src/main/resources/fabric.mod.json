@@ -1,0 +1,35 @@
+{
+	"schemaVersion": 1,
+	"id": "pixelreel",
+	"version": "${version}",
+	"name": "pixelReel",
+	"description": "Place televisions and cinema screens in your world and watch live TV channels together.",
+	"authors": [
+		"pixelReel contributors"
+	],
+	"contact": {},
+	"license": "CC0-1.0",
+	"icon": "assets/pixelreel/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.pixelreel.PixelReel"
+		],
+		"client": [
+			"com.pixelreel.client.PixelReelClient"
+		]
+	},
+	"mixins": [
+		"pixelreel.mixins.json",
+		{
+			"config": "pixelreel.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
