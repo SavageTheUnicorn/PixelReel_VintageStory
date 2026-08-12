@@ -206,7 +206,7 @@ direct-play URL, so asking it to start mid-film just replays from the top. Inste
 server broadcasts a seek and every client jumps locally, which is both faster and
 keeps the room in sync.
 
-## Not yet
+## Not adding as planned in the Minecraft mod
 
 - Poster art in the browse menu (it's a text list today)
 - HDR tone mapping
