@@ -5,7 +5,7 @@ friends. Each projector throws a floating screen, several can play at once, and
 audio falls off with distance so a cinema screen carries across a room while a
 small projector doesn't bleed into the next building.
 
-A port of [pixelReel](https://github.com/SavageTheUnicorn/PixelReel_VintageStory),
+A port of [pixelReel]([https://github.com/Samarth-programming/PixelReel_1.21.1]),
 the Fabric mod for Minecraft 1.21.1. Rewritten in C# against the Vintage Story API —
 no Java code carried over — but the design, the display dimensions, and the curved
 screen maths come straight from the original.
