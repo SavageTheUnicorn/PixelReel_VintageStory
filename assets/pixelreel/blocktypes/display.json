@@ -1,0 +1,94 @@
+{
+ "code": "display",
+ "class": "BlockDisplay",
+ "entityClass": "Display",
+ "variantgroups": [
+  {
+   "code": "type",
+   "states": [
+    "compacttelevision",
+    "walltelevision",
+    "ultrawidemonitor",
+    "cinemascreen",
+    "curvedcinemascreen"
+   ]
+  },
+  {
+   "code": "side",
+   "states": [
+    "north",
+    "east",
+    "south",
+    "west"
+   ]
+  }
+ ],
+ "creativeinventory": {
+  "general": [
+   "*-north"
+  ],
+  "decorative": [
+   "*-north"
+  ]
+ },
+ "blockmaterial": "Metal",
+ "drawtype": "JSON",
+ "shapeByType": {
+  "*-north": {
+   "base": "block/tv/frame",
+   "rotateY": 0
+  },
+  "*-east": {
+   "base": "block/tv/frame",
+   "rotateY": 270
+  },
+  "*-south": {
+   "base": "block/tv/frame",
+   "rotateY": 180
+  },
+  "*-west": {
+   "base": "block/tv/frame",
+   "rotateY": 90
+  }
+ },
+ "textures": {
+  "bezel": {
+   "base": "block/tv/bezel"
+  },
+  "screen": {
+   "base": "block/tv/screenoff"
+  }
+ },
+ "resistance": 3.5,
+ "requiredMiningTier": 1,
+ "sideopaque": {
+  "all": false
+ },
+ "sidesolid": {
+  "all": false
+ },
+ "replaceable": 500,
+ "lightAbsorption": 0,
+ "collisionbox": {
+  "x1": 0.25,
+  "y1": 0,
+  "z1": 0.25,
+  "x2": 0.75,
+  "y2": 0.5,
+  "z2": 0.75
+ },
+ "selectionbox": {
+  "x1": 0.25,
+  "y1": 0,
+  "z1": 0.25,
+  "x2": 0.75,
+  "y2": 0.5,
+  "z2": 0.75
+ },
+ "sounds": {
+  "place": "game:block/anvil",
+  "break": "game:block/anvil",
+  "hit": "game:block/anvil"
+ },
+ "materialDensity": 1200
+}

@@ -1,0 +1,98 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>PixelReel</AssemblyName>
+    <RootNamespace>PixelReel</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+  <!-- Locate the Vintage Story install. Checked in order; first hit wins.
+       Override anything below with:
+         dotnet build -c Release -p:GameDir="D:\Path\To\Vintagestory"        -->
+  <PropertyGroup>
+    <GameDir Condition="'$(GameDir)' == '' AND '$(VINTAGE_STORY)' != ''">$(VINTAGE_STORY)</GameDir>
+    <GameDir Condition="'$(GameDir)' == '' AND Exists('$(APPDATA)\Vintagestory\VintagestoryAPI.dll')">$(APPDATA)\Vintagestory</GameDir>
+    <GameDir Condition="'$(GameDir)' == '' AND Exists('C:\Program Files\Vintagestory\VintagestoryAPI.dll')">C:\Program Files\Vintagestory</GameDir>
+    <GameDir Condition="'$(GameDir)' == '' AND Exists('C:\Program Files (x86)\Vintagestory\VintagestoryAPI.dll')">C:\Program Files (x86)\Vintagestory</GameDir>
+    <GameDir Condition="'$(GameDir)' == '' AND Exists('C:\Program Files (x86)\Steam\steamapps\common\Vintagestory\VintagestoryAPI.dll')">C:\Program Files (x86)\Steam\steamapps\common\Vintagestory</GameDir>
+    <GameDir Condition="'$(GameDir)' == '' AND Exists('C:\Program Files\Steam\steamapps\common\Vintagestory\VintagestoryAPI.dll')">C:\Program Files\Steam\steamapps\common\Vintagestory</GameDir>
+    <GameDir Condition="'$(GameDir)' == '' AND Exists('$(HOME)/.local/share/vintagestory/VintagestoryAPI.dll')">$(HOME)/.local/share/vintagestory</GameDir>
+    <GameDir Condition="'$(GameDir)' == '' AND Exists('/usr/share/vintagestory/VintagestoryAPI.dll')">/usr/share/vintagestory</GameDir>
+
+    <ModsDir Condition="'$(ModsDir)' == '' AND '$(OS)' == 'Windows_NT'">$(APPDATA)\VintagestoryData\Mods</ModsDir>
+    <ModsDir Condition="'$(ModsDir)' == '' AND '$(OS)' != 'Windows_NT'">$(HOME)/.config/VintagestoryData/Mods</ModsDir>
+  </PropertyGroup>
+
+  <!-- Fail loudly and usefully instead of emitting 60+ confusing CS0246 errors. -->
+  <Target Name="VerifyGameDir" BeforeTargets="ResolveAssemblyReferences;Build">
+    <Error Condition="'$(GameDir)' == ''"
+           Text="Could not locate your Vintage Story install. Set the VINTAGE_STORY environment variable, or build with: dotnet build -c Release -p:GameDir=&quot;C:\Path\To\Vintagestory&quot; (the folder that directly contains VintagestoryAPI.dll)." />
+    <Error Condition="!Exists('$(GameDir)\VintagestoryAPI.dll')"
+           Text="GameDir is '$(GameDir)' but VintagestoryAPI.dll is not in it. Point GameDir at the folder that directly contains VintagestoryAPI.dll." />
+    <Message Importance="high" Text="pixelReel: using game assemblies from $(GameDir)" />
+  </Target>
+
+  <!-- LibVLCSharp is the managed wrapper only. Playback still uses your installed
+       64-bit VLC, exactly like the Fabric mod uses yours through vlcj. -->
+  <ItemGroup>
+    <PackageReference Include="LibVLCSharp" Version="3.10.1" />
+  </ItemGroup>
+
+  <!-- Phase 1 needs only these two. Survival/Essentials/Newtonsoft/protobuf come
+       later, when there is code that actually uses them. -->
+  <ItemGroup>
+    <Reference Include="VintagestoryAPI">
+      <HintPath>$(GameDir)\VintagestoryAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="VintagestoryLib">
+      <HintPath>$(GameDir)\VintagestoryLib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="protobuf-net">
+      <HintPath>$(GameDir)\Lib\protobuf-net.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="cairo-sharp">
+      <HintPath>$(GameDir)\Lib\cairo-sharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="modinfo.json" />
+    <None Include="assets\**\*" />
+  </ItemGroup>
+
+  <!-- Stages mod dll + LibVLCSharp.dll + assets, then zips straight into Mods. -->
+  <Target Name="PackageMod" AfterTargets="Build">
+    <PropertyGroup>
+      <StageDir>$(ProjectDir)obj\modstage\</StageDir>
+    </PropertyGroup>
+    <RemoveDir Directories="$(StageDir)" />
+    <MakeDir Directories="$(StageDir)" />
+
+    <ItemGroup>
+      <StageRoot Include="$(TargetDir)$(AssemblyName).dll" />
+      <StageRoot Include="$(TargetDir)LibVLCSharp.dll" />
+      <StageRoot Include="$(ProjectDir)modinfo.json" />
+      <StageAssets Include="$(ProjectDir)assets\**\*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(StageRoot)" DestinationFolder="$(StageDir)" />
+    <Copy SourceFiles="@(StageAssets)"
+          DestinationFiles="@(StageAssets->'$(StageDir)assets\%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <MakeDir Directories="$(ModsDir)" />
+    <ZipDirectory SourceDirectory="$(StageDir)"
+                  DestinationFile="$(ModsDir)\pixelreel.zip"
+                  Overwrite="true" />
+    <Message Importance="high" Text="pixelReel packaged -> $(ModsDir)\pixelreel.zip" />
+  </Target>
+
+</Project>

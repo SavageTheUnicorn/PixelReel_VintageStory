@@ -1,0 +1,14 @@
+{
+  "type": "code",
+  "modid": "pixelreel",
+  "name": "pixelReel",
+  "authors": [ "SavageTheUnicorn" ],
+  "description": "Watch Jellyfin, Emby, Plex and Tunarr content on in-world screens. Phase 1: single test display.",
+  "version": "0.1.0",
+  "side": "universal",
+  "requiredOnClient": true,
+  "requiredOnServer": true,
+  "dependencies": {
+    "game": "1.22.0"
+  }
+}

@@ -1,0 +1,28 @@
+{
+	"block-display-compacttelevision-north": "Compact Projector (3x2)",
+	"block-display-compacttelevision-east": "Compact Projector (3x2)",
+	"block-display-compacttelevision-south": "Compact Projector (3x2)",
+	"block-display-compacttelevision-west": "Compact Projector (3x2)",
+	"block-display-walltelevision-north": "Wall Projector (6x4)",
+	"block-display-walltelevision-east": "Wall Projector (6x4)",
+	"block-display-walltelevision-south": "Wall Projector (6x4)",
+	"block-display-walltelevision-west": "Wall Projector (6x4)",
+	"block-display-ultrawidemonitor-north": "Ultrawide Projector (8x4)",
+	"block-display-ultrawidemonitor-east": "Ultrawide Projector (8x4)",
+	"block-display-ultrawidemonitor-south": "Ultrawide Projector (8x4)",
+	"block-display-ultrawidemonitor-west": "Ultrawide Projector (8x4)",
+	"block-display-cinemascreen-north": "Cinema Projector (14x8)",
+	"block-display-cinemascreen-east": "Cinema Projector (14x8)",
+	"block-display-cinemascreen-south": "Cinema Projector (14x8)",
+	"block-display-cinemascreen-west": "Cinema Projector (14x8)",
+	"block-display-curvedcinemascreen-north": "Curved Cinema Projector (16x7)",
+	"block-display-curvedcinemascreen-east": "Curved Cinema Projector (16x7)",
+	"block-display-curvedcinemascreen-south": "Curved Cinema Projector (16x7)",
+	"block-display-curvedcinemascreen-west": "Curved Cinema Projector (16x7)",
+
+	"pixelreel:blockhelp-openmenu": "Open media menu",
+	"pixelreel:blockhelp-togglepower": "Toggle power",
+	"pixelreel:info-size": "Projects {0} x {1} blocks",
+	"pixelreel:vlc-missing": "pixelReel: no usable VLC. Run .tv status for details \u2014 64-bit VLC is required.",
+	"pixelreel:no-url": "pixelReel: nothing selected. Right-click to open the media menu."
+}
