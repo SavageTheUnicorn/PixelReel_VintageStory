@@ -1,258 +1,218 @@
-# pixelReel
+# pixelReel for Vintage Story
 
-Fabric mod for **Minecraft Java Edition 1.21.1** that lets you place televisions and cinema screens in your world and watch **live TV** and **on-demand media** together with friends.
+Place projectors in your world and watch **Jellyfin** movies and TV together with
+friends. Each projector throws a floating screen, several can play at once, and
+audio falls off with distance so a cinema screen carries across a room while a
+small projector doesn't bleed into the next building.
 
-Live channels come from a Tunarr (or any M3U + XMLTV) playlist. Movies and shows can come from **Jellyfin**, **Emby**, or **Plex**. Each display keeps its own channel or title, multiple screens can play at once, and audio is positional.
-
-> This branch targets the **stable 1.21.1** Fabric toolchain. For the newer snapshot build, see the `26.3-snapshot-5` branch / release.
+A port of [pixelReel](https://github.com/SavageTheUnicorn/PixelReel_VintageStory),
+the Fabric mod for Minecraft 1.21.1. Rewritten in C# against the Vintage Story API —
+no Java code carried over — but the design, the display dimensions, and the curved
+screen maths come straight from the original.
 
 ## Requirements
 
+| Requirement | Notes |
+| --- | --- |
+| **Vintage Story 1.22+** | Built against the current stable line. |
+| **.NET 10** | Required to build. Vintage Story 1.22 moved to it from .NET 8. |
+| **VLC (64-bit)** | Needed on each **client** for video and audio. Get it from [videolan.org](https://www.videolan.org). |
+| **A Jellyfin server** | Anything reachable from the game server. |
 
-| Requirement                  | Notes                                                                                             |
-| ---------------------------- | ------------------------------------------------------------------------------------------------- |
-| **Java 21+**                 | Required by Minecraft 1.21.1 / this toolchain.                                                    |
-| **Minecraft 1.21.1**         | Built against this release specifically.                                                          |
-| **Fabric Loader** `>=0.19.3` | Pinned in `gradle.properties`.                                                                    |
-| **Fabric API**               | Use `0.116.15+1.21.1` (or the matching build in `gradle.properties`).                             |
-| **VLC (64-bit)**             | Needed on each **client** for video/audio. Install from [videolan.org](https://www.videolan.org). |
+The 64-bit requirement is not optional: Vintage Story is a 64-bit process and cannot
+load a 32-bit `libvlc.dll`. If you have VLC in `Program Files (x86)`, that's the
+32-bit build and it won't work.
 
+Without VLC the mod still loads, menus and commands still work, and projectors
+report their state — you just get no picture. Run `.tv status` to see why.
 
-Without VLC, menus, guide, commands, and multiplayer sync still work, but screens show a “video player unavailable” state instead of video.
-
-If VLC is installed in a non-standard location, launch the game with:
-
-```text
--Dpixelreel.vlc.path=C:\Path\To\VLC
-```
-
-
+If VLC is somewhere unusual, set `VlcPath` in the config to the folder containing
+`libvlc.dll`.
 
 ## Building
 
-Windows:
+```bat
+dotnet build -c Release
+```
+
+The project locates your Vintage Story install automatically. If it can't:
 
 ```bat
-gradlew.bat clean build
+dotnet build -c Release -p:GameDir="C:\Users\you\AppData\Roaming\Vintagestory"
 ```
 
-macOS / Linux:
+That's the folder containing `VintagestoryAPI.dll`, not `VintagestoryData`.
 
-```sh
-./gradlew clean build
-```
-
-The installable JAR is:
-
-```text
-build\libs\pixelreel-1.0.0.jar
-```
-
-Use the JAR **without** `-sources`.
-
-Dev client (Run and Debug in Cursor/VS Code, or):
-
-```bat
-gradlew.bat runClient
-```
-
-Generate Cursor/VS Code launch configs with:
-
-```bat
-gradlew.bat vscode
-```
-
-
-
-## Installing
-
-1. Install Fabric Loader for Minecraft **1.21.1**.
-2. Put **Fabric API** (`0.116.15+1.21.1` or newer matching 1.21.1) in your `mods` folder.
-3. Put `pixelreel-1.0.0.jar` in `mods`.
-4. Install **64-bit VLC** on every client that should see video.
-
-The mod runs on clients and servers (`environment: *`). For multiplayer, **both sides** need the mod. VLC is only required on clients.
+The build packages itself straight into your mods folder as `pixelreel.zip`. There's
+no separate install step — `LibVLCSharp.dll` comes from NuGet and is bundled in.
 
 ## Configuration
 
-Created on first launch at `config/pixelreel.json`.
+Written on first launch to `ModConfig/pixelreel.json`.
 
-### Tunarr (Live TV / M3U / XMLTV)
+### Jellyfin (server side)
 
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `JellyfinUrl` | `""` | Server URL, e.g. `https://watch.example.com` or `http://192.168.1.50:8096`. No trailing slash. |
+| `JellyfinApiKey` | `""` | From Jellyfin's Dashboard → API Keys. |
+| `JellyfinUserId` | `""` | Dashboard → Users → click a user → copy `userId=` from the address bar. |
+| `RequestTimeoutSeconds` | `15` | How long to wait on Jellyfin before giving up. |
+| `AutoplayNextEpisode` | `true` | Roll into the next episode when one finishes. |
+| `SubtitlesEnabled` | `true` | Fetch and display subtitles when available. |
+| `SubtitleLanguage` | `"eng"` | Three-letter code. Falls back to the default or first track. |
 
-| Key        | Default | Meaning                                                                                            |
-| ---------- | ------- | -------------------------------------------------------------------------------------------------- |
-| `m3uUrl`   | `""`    | Tunarr base URL or full M3U URL. A base like `http://1.1.1.1:8000` expands to `/api/channels.m3u`. |
-| `xmltvUrl` | `""`    | XMLTV guide URL. Auto-filled from a Tunarr base as `/api/xmltv.xml` when empty.                    |
+**Make a dedicated Jellyfin user** with access only to the libraries you want in
+game, and use that user's key. Not just tidier — see the security note below.
 
+### Video and audio (client side)
 
-Tunarr Config
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `VlcPath` | `""` | Folder holding `libvlc.dll`. Empty means autodetect. |
+| `VlcOptions` | *(see file)* | Passed straight to libvlc. `--network-caching` matters most; raise it for remote servers. |
+| `MaxDecodeHeight` | `1080` | Decode cap. 4K costs ~33 MB of VRAM per screen. |
+| `HardwareDecoding` | `false` | Leave off. See the note below. |
+| `ScreenBrightness` | `1.0` | 1.0 shows the video's own colours. Lower to dim. |
+| `VerticalOffsetBlocks` | `1.5` | How far above the projector the image starts. |
+| `ForwardOffsetBlocks` | `1.0` | How far in front the image hangs. |
+| `MasterVolume` | `1.0` | Overall gain for pixelReel audio. |
+| `FullscreenHidesHud` | `true` | Cover the HUD in theatre mode. |
+| `FullscreenFullVolume` | `true` | Ignore distance falloff while in theatre mode. |
 
-### Jellyfin
+On a dedicated server the Jellyfin keys matter and the video keys are ignored. On a
+client it's the reverse. Singleplayer uses both.
 
-**Tip:** create a dedicated Jellyfin user with access only to **Movies** and **TV Shows**, or **Anime**, then use that user’s API key here. It’s simpler and safer than pointing the mod at your admin account.
+## Projectors
 
+| Block | Screen size | Audio range |
+| --- | --- | --- |
+| Compact Projector | 3 × 2 | 16 |
+| Wall Projector | 6 × 4 | 24 |
+| Ultrawide Projector | 8 × 4 | 24 |
+| Cinema Projector | 14 × 8 | 80 |
+| Curved Cinema Projector | 16 × 7 | 80 |
 
-| Key                                   | Default | Meaning                                   |
-| ------------------------------------- | ------- | ----------------------------------------- |
-| `jellyfinUrl`                         | `""`    | Server URL (often port `8096`).           |
-| `jellyfinApiKey`                      | `""`    | API key.                                  |
-| `jellyfinUserId`                      | `""`    | Optional user id.                         |
-| `jellyfinMoviesEnabled`               | `true`  | Show movies.                              |
-| `jellyfinTvShowsEnabled`              | `true`  | Show TV series.                           |
-| `jellyfinLibraryIds`                  | `[]`    | Limit to specific libraries; empty = all. |
-| `jellyfinAutoplayNextEpisode`         | `true`  | Autoplay next episode.                    |
-| `jellyfinLibraryCacheSeconds`         | `600`   | Library cache lifetime.                   |
-| `jellyfinProgressReportSeconds`       | `30`    | Playback progress report interval.        |
-| `jellyfinNextEpisodeCountdownSeconds` | `10`    | Countdown before next episode.            |
+All five appear in creative and are findable by searching *projector*, *cinema*, or
+*television*. Each is a single 1×1 block that projects a floating screen in front of
+itself — build your own frames, walls, and seating around the picture.
 
+The curved projector's screen is concave, wrapping toward the viewer at the edges.
+It's the one to use for a proper home cinema.
 
-Jellyfin config
+Video is letterboxed or pillarboxed to fit, never stretched. On the curved screen the
+fit is solved against arc length rather than chord length, so the curve doesn't
+squash the picture horizontally.
 
-### Emby
+## Using it
 
-**Tip:** create a dedicated Emby user with access only to **Movies** and **TV Shows**, or **Anime**, then use that user’s API key here. It’s simpler and safer than pointing the mod at your admin account.
+- **Right-click** a projector — opens the media menu. Now Playing if something's
+  loaded, otherwise the library browser.
+- **Sneak + right-click** — toggle power.
+- **F6** — theatre mode, while looking at a playing projector. Escape or F6 exits.
 
+### Browsing
 
-| Key                       | Default | Meaning                                   |
-| ------------------------- | ------- | ----------------------------------------- |
-| `embyUrl`                 | `""`    | Server URL.                               |
-| `embyApiKey`              | `""`    | API key.                                  |
-| `embyUserId`              | `""`    | Optional user id.                         |
-| `embyMoviesEnabled`       | `true`  | Show movies.                              |
-| `embyTvShowsEnabled`      | `true`  | Show TV series.                           |
-| `embyLibraryIds`          | `[]`    | Limit to specific libraries; empty = all. |
-| `embyLibraryCacheSeconds` | `600`   | Library cache lifetime.                   |
+Libraries → series → seasons → episodes, or **Recently Added** for a flat list of
+the newest movies and episodes. Anything you're part way through shows its resume
+position, and picking it carries on from there.
 
+### Playback controls
 
-Emby config
+Pause/resume, −30s, +30s, restart, next episode, volume, and subtitle track.
 
-### Plex
+Controls go through the server, so a pause is a pause for everyone watching. Seeking
+moves every client's playhead together rather than re-fetching the stream — nobody
+drifts out of step, and the film doesn't restart.
 
-**Tip:** prefer a Plex account/user that only has access to **Movies**, **TV Shows**, and/or **Anime**, then use that account’s token here instead of a full admin setup.
+Subtitles are the deliberate exception: they cycle locally, because one viewer
+wanting captions shouldn't force them on the whole room.
 
-#### How to get `plexToken`
+### Theatre mode
 
-1. Open your Plex web app and sign in.
-2. Click any movie or TV show (for example *American Dad*).
-3. Click the **three dots** → **Get Info** → **View XML**.
-4. In the address bar of the XML page, find `X-Plex-Token=` — the value after it is your Plex token.
-5. Paste that value into `plexToken` in the in-game GUI.
-
-
-| Key                       | Default | Meaning                                   |
-| ------------------------- | ------- | ----------------------------------------- |
-| `plexUrl`                 | `""`    | Server URL (often port `32400`).          |
-| `plexToken`               | `""`    | Plex token (see steps above).             |
-| `plexMoviesEnabled`       | `true`  | Show movies.                              |
-| `plexTvShowsEnabled`      | `true`  | Show TV series.                           |
-| `plexLibraryKeys`         | `[]`    | Limit to specific libraries; empty = all. |
-| `plexLibraryCacheSeconds` | `600`   | Library cache lifetime.                   |
-
-
-Plex config
-
-**API keys and tokens stay server-side. Clients only receive non-secret public config.**
-
-## Displays
-
-
-| Block                | Size   | Audio range |
-| -------------------- | ------ | ----------- |
-| Compact Television   | 3 × 2  | 16          |
-| Wall Television      | 6 × 4  | 24          |
-| Ultrawide Monitor    | 8 × 4  | 24          |
-| Cinema Screen        | 14 × 8 | 80          |
-| Curved Cinema Screen | 16 × 7 | 80          |
-
-
-**Using a curved cinema screen is the best way to watch 4K HDR content when creating your own home movie theater. (just my opinion)**
-
-Curved Screen with glasses
-
-All are craftable, appear in the **pixelReel** creative tab, and are findable by searching *television*, *TV*, *screen*, *cinema*, or *monitor*.
-
-**Pixel Glasses** are also craftable: wear them for a fullscreen overlay of a nearby playing screen (HUD hotbar/crosshair hidden while active).
-
-Only the active screen area has collision — bezels stay buildable so you can frame screens with your own blocks. Breaking the center/controller removes the whole display; player builds are never touched.
-
-- **Right-click** a display: open the media menu.
-- **Sneak + right-click**: toggle power.
-- Video is letterboxed/pillarboxed to the screen aspect (never stretched); it keeps its original aspect ratio.
-
-Choose your sourceMedia selectorPosters MoviesPosters TV Shows
+F6 fills the screen with the video and covers the HUD. It reuses the texture the
+in-world screen already uploads, so there's no second decoder and no extra VRAM.
+Audio ignores distance while you're watching, so you can sit anywhere.
 
 ## Commands
 
-Most screen actions use these commands (look at a display when required):
+Vintage Story uses a dot prefix for client commands and a slash for server commands.
 
 ```text
-/tv menu                 open the media menu
-/tv channels             list live channels
-/tv channel <n or name>  tune a live channel
-/tv next | previous      change channel
-/tv guide                now/next programme overview
-/tv status               power, channel, stream, and volume diagnostics
-/tv retry                restart playback
-/tv reload               re-download playlist/guide
-/tv stop | resume        pause/resume playback
-/tv power on|off|toggle  power control
-/tv volume <0-100>       per-display volume
-/tv rebuild              rebuild screen collision without touching builds
-/tv jellyfin status|refresh|configure
+.tv status              VLC availability, process bitness, decode settings
+.tv jellyfin            ask the server to ping Jellyfin, report the server name
+.tv reload              re-read the client config
+
+/pixelreel status       whether Jellyfin credentials are present   (admin)
+/pixelreel reload       re-read server config and reconnect        (admin)
 ```
 
-
+`.tv status` is the first thing to run when there's no picture — it reports whether
+libvlc loaded, and if not, every folder it searched.
 
 ## Multiplayer
 
-Display state (type, power, channel/media, facing, volume, playback position) is **server-auth** and synced to every client, including players who join later.
+Display state — power, media, playback position, volume, pause, subtitles — is
+server-authoritative and synced to every client, including players who join mid-film.
+Each client decodes the stream locally with its own VLC.
 
-Each client decodes the stream locally with its own VLC. Credentials are never stored in world data.
+Credentials live in the server's config and are never written into world data.
 
-## Roadmap
+**One caveat worth understanding.** Jellyfin playback URLs have to carry the API key,
+because each client's VLC authenticates directly against Jellyfin. Any player who can
+open a projector can therefore read that key from their own logs. On a private server
+among friends this is a non-issue; on a public one, use a dedicated playback-only
+Jellyfin user rather than an admin key.
 
+## Troubleshooting
 
+| Symptom | Cause |
+| --- | --- |
+| `.tv status` says VLC unavailable | No 64-bit VLC, or it's somewhere unusual — set `VlcPath`. |
+| Picture plays close up, freezes at distance | Mipmap filtering. Fixed in current builds; check the block's info panel for `Mip filter: FAILED`. |
+| Picture washed out or fading with distance | Fog or bloom leaking onto the screen quad. Fixed; report if it returns. |
+| Video starts then freezes on frame one | `HardwareDecoding` is on. Turn it off — hardware decode routes frames to the GPU where libvlc's callbacks never see them. |
+| Stuttering on a remote server | Raise `--network-caching` in `VlcOptions` to 5000 or higher. |
+| Browsing returns nothing | The Jellyfin user can't see any libraries, or they're not movie/TV collections. |
+| No subtitles | Check the log for `no external subtitles for <id>` — that distinguishes a fetch problem from a rendering one. |
 
-### What we have **Now**
+## Differences from the Minecraft mod
 
-What already works in this **1.21.1** build:
+Same idea, several deliberate departures.
 
-- [x] Fabric mod targeting Minecraft **1.21.1**
-- [x] Five display sizes (Compact TV, Wall TV, Ultrawide, Cinema, Curved Cinema)
-- [x] Live TV via Tunarr / M3U + XMLTV guide
-- [x] Jellyfin, Emby, and Plex integration
-- [x] In-game provider config GUIs (Tunarr, Jellyfin, Emby, Plex)
-- [x] Poster-based movie & TV browse UI
-- [x] Playback controls (power, pause/resume, volume, channel/media select)
-- [x] `/tv` command suite for screen control & diagnostics
-- [x] Server-authoritative multiplayer sync (late-join included)
-- [x] Client-side VLC decode with positional audio
-- [x] Subtitles, letterboxing, and HDR tone mapping
-- [x] Pixel Glasses fullscreen overlay
-- [x] Craftable displays + creative tab
+**Projectors, not multiblock displays.** The original builds screens out of filler
+panel blocks. An early version of this port did too, but Vintage Story's built-in
+multiblock behaviour caps at 5×6×5 and three of the five displays are larger, so it
+meant hand-rolling the whole panel system. Replacing it with 1×1 projectors deleted
+several hundred lines along with an entire class of orientation bugs, and left
+players free to build whatever backdrop they like.
 
+**Jellyfin only.** No Emby, Plex, or Tunarr live TV. Emby would be a small addition
+since it shares Jellyfin's API lineage; Plex is a different shape entirely (XML, its
+own auth and library-key scheme) and isn't worth carrying untested.
 
+**No hand-written state packets.** Display state lives in block entity tree
+attributes, which Vintage Story already replicates and replays for late joiners. The
+Fabric version needs around 1,500 lines of codec boilerplate for this; here it's
+about twenty. The network channel only carries what sync can't express — browse
+requests and playback commands.
 
-### Upcoming
+**Subtitles aren't burned in.** The original rasterises subtitle text into each video
+frame using Minecraft's font atlas. libvlc already blends subtitles into the picture
+before handing frames over, so this port just picks the right track and lets it.
 
+**Seeking moves the playhead.** Jellyfin ignores `startTimeTicks` on a static
+direct-play URL, so asking it to start mid-film just replays from the top. Instead the
+server broadcasts a seek and every client jumps locally, which is both faster and
+keeps the room in sync.
 
-| Feature                             | Status  | Priority | Notes                                                                                                                                                    |
-| ----------------------------------- | ------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Admin remote control**            | Planned | High     | Item or GUI usable from anywhere (not only at the screen). Admins can start, pause, rewind/seek, pick content, and open config for any display.          |
-| **Personalized screens**            | Planned | High     | Per-player private viewing — each player can have their own channel/title on a shared or personal display without forcing everyone onto the same stream. |
-| **Movie scheduler**                 | Planned | Medium   | Queue showtimes (date/time + title or channel). Auto power-on, start playback, and optional lobby announcements for cinema nights.                       |
-| **YouTube / streaming integration** | Planned | Medium   | Play YouTube (and possibly other stream sources) on displays alongside Tunarr and media servers. Exact providers TBD.                                    |
-| **Posters as paintings**            | Planned | Medium   | Place movie/show posters in the world as painting-style decor (from library artwork), not only inside the browse menus.                                  |
-| **Fabric on other stables**         | Planned | High     | Port to additional Fabric targets such as **1.20.1**                                                                                                     |
-| **NeoForge support**                | Planned | High     | First-class NeoForge build so servers/clients on NeoForge can run pixelReel.                                                                             |
-| **Forge support**                   | Planned | Medium   | Forge port after (or alongside) NeoForge, depending on version demand.                                                                                   |
+## Not yet
 
-
-Ideas and PRs welcome — especially for loaders, version ports, and the admin remote.
+- Poster art in the browse menu (it's a text list today)
+- HDR tone mapping
+- Crafting recipes — creative inventory only so far
+- Movie scheduler, admin remote, per-player private viewing
 
 ## License
 
-This project is available under the [CC0 1.0](LICENSE) license.
-
-DISCORD: https://discord.gg/RSWQuEnMj
+[CC0 1.0](LICENSE), same as the original.
